@@ -1,0 +1,8 @@
+{
+ "dependencies": {
+  "aws-sdk": "^2.437.0",
+  "mysql2": "^2.1.0",
+  "sequelize": "^5.15.1",
+  "sequelize-aws-data-api-connector": "0.0.4"
+ }
+}

@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ticketapp
+Transform:
+- AWS::Serverless-2016-10-31
+Resources:
+  getTicketByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/ticket.getTicketByIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This will insert ticket in Ticket table in Aurora table Ticket.
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tickets/{ticketid}
+            Method: GET
+      CodeUri: s3://aws-sam-ticketappdeployment/84e7d3210385d34c153cfd275a3bc506
+  getTickets:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/ticket.getTicketsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This method will insert ticket record in table Ticket.
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tickets/
+            Method: GET
+      CodeUri: s3://aws-sam-ticketappdeployment/84e7d3210385d34c153cfd275a3bc506
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod/

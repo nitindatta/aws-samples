@@ -1,0 +1,391 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  ticketapp
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+# This Api Gateway set up
+  
+  TicketAppApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: False
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+        # swagger for returning cors headers
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          version: v1
+          title: TicketApp
+        basePath: /api
+        schemes:
+        - https
+        paths:
+          /tickets:
+            get:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+                  headers:
+                    Access-Control-Allow-Origin:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                        type: "string"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''GET'''
+                uri: 
+                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getTickets.Arn}/invocations
+                httpMethod: "POST" # post to lamba function
+                type: "aws_proxy" #proxy integration
+                 
+            put:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+                  headers:
+                    Access-Control-Allow-Origin:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                        type: "string"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''GET'''
+                uri: 
+                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${createTickets.Arn}/invocations
+                httpMethod: "POST"
+                type: "aws_proxy"
+                 
+            options:
+              consumes:
+              - "application/json"
+              produces:
+              - "application/json"
+              responses:
+                "200":
+                  description: "200 response"
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: "string"
+                    Access-Control-Allow-Methods:
+                      type: "string"
+                    Access-Control-Allow-Headers:
+                      type: "string"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                passthroughBehavior: "when_no_match"
+                type: "mock"
+                 
+          /tickets/{ticketid}:
+            get:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+                  headers:
+                    Access-Control-Allow-Origin:
+                        type: "string"
+                    Access-Control-Allow-Headers:
+                        type: "string"
+                    Access-Control-Allow-Methods:
+                        type: "string"
+              security:
+              - sigv4: []
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                      method.response.header.Access-Control-Allow-Headers: '''*'''
+                      method.response.header.Access-Control-Allow-Methods: '''GET'''
+                uri: 
+                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getTicketByIdFunction.Arn}/invocations
+                httpMethod: "POST"
+                type: "aws_proxy"
+                  
+            options:
+              consumes:
+              - "application/json"
+              produces:
+              - "application/json"
+              responses:
+                "200":
+                  description: "200 response"
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: "string"
+                    Access-Control-Allow-Methods:
+                      type: "string"
+                    Access-Control-Allow-Headers:
+                      type: "string"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                passthroughBehavior: "when_no_match"
+                type: "mock"
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'*'"
+              Access-Control-Allow-Methods: "'*'"
+        DEFAULT_5xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'*'"
+              Access-Control-Allow-Methods: "'*'"
+
+  # Authorization and set up of user pools
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: TicketAppUserPool
+       # Set email as an alias
+      UsernameAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 6
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: TicketAppMobileClient
+      GenerateSecret: no
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties: 
+      Domain: ticketapp
+      UserPoolId: !Ref UserPool
+
+  CognitoIdentityPool:
+    Type: "AWS::Cognito::IdentityPool"
+    Properties:
+      IdentityPoolName: !Ref AWS::StackName
+      CognitoIdentityProviders: 
+        -
+          ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+      AllowUnauthenticatedIdentities: false
+      
+  CognitoIdentityPoolRoles:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: CognitoIdentityPool
+      Roles:
+        authenticated:
+          Fn::GetAtt: [CognitoAuthRole, Arn]
+
+  CognitoAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: 'CognitoAuthorizedPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: '*'
+              
+              # Allow users to invoke our API
+              - Effect: 'Allow'
+                Action:
+                  - 'execute-api:Invoke'
+                Resource:
+                  Fn::Join:
+                    - ''
+                    -
+                      - 'arn:aws:execute-api:'
+                      - Ref: AWS::Region
+                      - ':'
+                      - Ref: AWS::AccountId
+                      - ':'
+                      - Ref: TicketAppApi
+                      - '/*'
+              
+              # Allow users to upload attachments to their
+              # folder inside our S3 bucket
+  TicketAppDep:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+        LayerName: ticketapp-dependencies
+        Description: Dependencies for ticket app
+        ContentUri: ../dependencies/
+        CompatibleRuntimes:
+          - nodejs12.x
+        RetentionPolicy: Retain
+  # This is a Lambda function config associated with the source code: get-by-id.js
+  getTicketByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers/ticket.getTicketByIdHandler
+      Layers:
+        - !Ref TicketAppDep
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 101
+      Description: This will insert ticket in Ticket table in Aurora table Ticket.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the aurora
+        - arn:aws:iam::899885580749:policy/TicketappRDSFullDataAccess
+
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TicketAppApi
+            Path: /tickets/{ticketid}
+            Method: GET
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: put-item.js
+  getTickets:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers/ticket.getTicketsHandler
+      Layers:
+        - !Ref TicketAppDep
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This method will get all tickets. 
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the aurora
+        - arn:aws:iam::899885580749:policy/TicketappRDSFullDataAccess   
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TicketAppApi
+            Path: /tickets/
+            Method: GET
+    # This is a Lambda function config associated with the source code: put-item.js
+  createTickets:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers/ticket.createTicketsHandler
+      Layers:
+        - !Ref TicketAppDep
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This method will insert ticket record in table Ticket.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the aurora
+        - arn:aws:iam::899885580749:policy/TicketappRDSFullDataAccess
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TicketAppApi
+            Path: /tickets/
+            Method: PUT
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${TicketAppApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+

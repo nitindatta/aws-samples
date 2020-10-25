@@ -1,0 +1,4 @@
+node_modules
+.aws-sam
+opt
+out.yaml
