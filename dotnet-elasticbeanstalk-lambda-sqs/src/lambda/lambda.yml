@@ -1,0 +1,127 @@
+  
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Lambda application that calls the Lambda API. And scheduled funtion job
+
+Parameters:
+  WebApiStackName:
+    Description: Web Api Stack Name.
+    Type: String
+    Default: dotnet-helloworld
+
+  S3BucketName:
+    Description: Web Api Stack Name.
+    Type: String
+    Default: dotnet-helloworld-lambda
+
+Resources:
+  S3BucketInput:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Ref S3BucketName
+
+  BucketPolicyLambda:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref S3BucketInput
+      PolicyDocument:
+        Statement:
+          - Action:
+              - 's3:GetObject'
+              - 's3:PutObject'
+            Effect: Allow
+            Resource: !Join [ "/", [ !GetAtt S3BucketInput.Arn, '*' ] ]
+            Principal:
+              AWS:
+                - !GetAtt LambdaAuthRole.Arn
+
+  LambdaAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+
+  DotnetReceiveEvent:
+    Type: AWS::Serverless::Function
+    Properties:
+      Events:
+        SQS:
+          Type: SQS
+          Properties:
+            BatchSize: 2
+            Enabled: true
+            Queue:
+              Fn::ImportValue:
+                !Sub "${WebApiStackName}-SQSQueueArn"
+
+      Handler: Demo.Aws.Lambda::Demo.Aws.LambdaFunction.Function::FunctionHandler
+      Runtime: dotnetcore3.1
+      CodeUri: helloworld-lambda.zip
+      Description: Receive Transaction from SQS
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          S3Bucket: !Ref S3BucketInput
+          S3BucketRegion: !Ref 'AWS::Region'
+      Role: !GetAtt LambdaAuthRole.Arn
+
+  DotnetScheduledJob:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: Demo.Aws.Lambda::Demo.Aws.LambdaFunction.ScheduleJob::FunctionHandler
+      Runtime: dotnetcore3.1
+      CodeUri: helloworld-lambda.zip
+      Description: Receive Scheduled Event
+      MemorySize: 128
+      Timeout: 30
+  # Schedule Function
+  ScheduledRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(5 minutes)"
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "DotnetScheduledJob"
+              - "Arn"
+          Id: "TargetFunctionV1"
+
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "DotnetScheduledJob"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "ScheduledRule"
+          - "Arn"
+      # Environment:
+      #   Variables:
+      #     S3Bucket: !Ref S3BucketInput
+      #     S3BucketRegion: !Ref 'AWS::Region'
+      # Role: !GetAtt LambdaAuthRole.Arn
+
+      # Function's execution role
+      # Policies:
+      #   - AWSLambdaBasicExecutionRole
+      #   - SQSPollerPolicy:
+      #       QueueName:
+      #         Fn::ImportValue:
+      #           !Sub "${WebApiStackName}-SQSQueueName"
