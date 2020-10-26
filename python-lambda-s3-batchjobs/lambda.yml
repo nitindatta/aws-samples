@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+- AWS::Serverless-2016-10-31
+Description: >-
+  AWS CloudFormation Template for creating lambda function for infrastructure
+Parameters:
+  S3JsonJobBucketName:
+    Description: S3 Json Bucket Name.
+    Type: String
+    Default: dev-jobimporter-json
+  JobDefinitionJsonImportName:
+    Description: Name of job definition for json import
+    Type: String
+    Default: JobDefinitionJsonImport
+  JobQueueName:
+    Description: Name of job definition for json import
+    Type: String
+    Default: BatchJobQueueC5xLarge
+
+Resources:
+  S3JsonJobBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName:
+        Ref: S3JsonJobBucketName
+
+  BatchProcessBucketPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref BatchProcessingLambdaInvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref "AWS::AccountId"
+      SourceArn: !GetAtt S3JsonJobBucket.Arn
+
+  BatchProcessingLambdaAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSBatchFullAccess
+
+  BatchProcessingLambdaInvokeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: jobimporter-cli-invokebatch
+      Description: Python Function Handler that would be triggered BY s3 events TO the aws batch
+      Handler: handlers/invokebatch.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 30
+      Role: !GetAtt BatchProcessingLambdaAuthRole.Arn
+      Events:
+        S3InvokeBatch:
+          Type: S3
+          Properties:
+            Bucket: !Ref S3JsonJobBucket
+            Events: s3:ObjectCreated:*
+      Environment:
+        Variables:
+          BATCH_JOBQUEUE: !Ref JobQueueName
+          BATCH_JOBDEFINITION: !Ref JobDefinitionJsonImportName
+
+Outputs:
+  BatchProcessingLambdaInvokeFunctionArn:
+    Value: !GetAtt BatchProcessingLambdaInvokeFunction.Arn
